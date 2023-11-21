@@ -33,7 +33,7 @@ def job_search(raw_markup):
     :return: Список со списками, содержащие данные по вакансиям, удовлетворяющие ключевым словам
     """
 
-    list_search = ['Django', 'Flask']
+    # list_search = ['Django', 'Flask']
 
     soup = BeautifulSoup(raw_markup.text, features='html.parser')
 
@@ -46,18 +46,23 @@ def job_search(raw_markup):
     list_of_suitable_vacancies = []
 
     for vacancy in name_tag:
-        # name_vacancy = vacancy.text
+        name_vacancy = vacancy.text
+        # print(f'name_vacancy: <{name_vacancy}>')
         # words_list = name_vacancy.split()
 
         link_vacancy = vacancy.get('href')
+        # print(f'link_vacancy: <{link_vacancy}>')
         vacancy_data = parse_link_vacancy(link_vacancy)
 
         if vacancy_data is not None:
             list_of_suitable_vacancies.append(vacancy_data)
-        else:
-            continue
+        # else:
+        #     print('Нет совпадений')
+        #
+        # print('\n')
 
-    return list_of_suitable_vacancies
+    # return list_of_suitable_vacancies
+    print(list_of_suitable_vacancies)
 
 
 def parse_link_vacancy(link):
@@ -69,22 +74,38 @@ def parse_link_vacancy(link):
 
     headers_gen = fake_headers.Headers(browser='firefox', os='win')
 
-    html_data = requests.get(url=link, headers=headers_gen.generate())
-    print(html_data.status_code)
+    html_page = requests.get(url=link, headers=headers_gen.generate())
+    # print(html_page.status_code)
 
-    soup = BeautifulSoup(html_data.text, features='html.parser')
+    soup = BeautifulSoup(html_page.text, features='html.parser')
+    # print(soup)
 
     # извлекаем посты
-    posts = soup.find(name='main', class_='vacancy-serp-content')
+    vacancy_description = soup.find(name='div', class_='g-user-content')
+    # print(f'vacancy_description: <{vacancy_description.text}>')
+    words_list_vacancy_description = vacancy_description.text.split()
+
+    list_search = ['Django', 'Flask']
 
     answer = []
 
-    return answer
+    for keywords in list_search:
+        if keywords in words_list_vacancy_description:
+            print(f'Вакансия содержит ключевое слово {keywords}')
+            answer.append(vacancy_description.text)
+        # else:
+        #     print('Not in')
 
+    if len(answer) > 0:
+        return answer
+    else:
+        return None
 
 
 # 3. Записать в json информацию о каждой вакансии - ссылка, вилка зп, название компании, город.
 
 
 ###
-get_response()
+html_data = get_response()
+job_search(html_data)
+
