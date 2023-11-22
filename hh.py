@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import fake_headers
 import requests
 from bs4 import BeautifulSoup
@@ -85,7 +87,7 @@ def parse_link_vacancy(link):
 
     name_company = 'name_company'
 
-    city = soup.find(name='a')
+    city = soup.find(name='div', class_='vacancy-company-redesigned').get('a')
 
     list_search = ['Django', 'Flask']
 
@@ -100,7 +102,7 @@ def parse_link_vacancy(link):
                 'city': city
             }
 
-            print(vacancy_dict)
+            pprint(vacancy_dict)
 
             return vacancy_dict
 
@@ -109,6 +111,6 @@ def parse_link_vacancy(link):
 
 
 ###
-html_data = get_response()
-job_search(html_data)
+get_response()
+# job_search(html_data)
 
