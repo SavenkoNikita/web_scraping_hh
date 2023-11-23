@@ -1,3 +1,5 @@
+import json
+import time
 from pprint import pprint
 
 import fake_headers
@@ -21,10 +23,10 @@ def get_response():
     headers_gen = fake_headers.Headers(browser='firefox', os='win')
 
     html_data = requests.get(url=parse_link, headers=headers_gen.generate())
-    # print(html_data.text)
-    # print(html_data.status_code)
 
-    job_search(raw_markup=html_data)
+    return html_data
+
+    # job_search(raw_markup=html_data)
 
 
 # 2. Нужно выбрать те вакансии, у которых в описании есть ключевые слова "Django" и "Flask".
@@ -38,26 +40,19 @@ def job_search(raw_markup):
     soup = BeautifulSoup(raw_markup.text, features='html.parser')
 
     posts = soup.find(name='main', class_='vacancy-serp-content')
-    # print(posts)
-    # name_tag = posts.find_all(class_='serp-item__title')
     name_tag = posts.find_all(name='a', class_='serp-item__title')
 
     list_of_suitable_vacancies = []
 
     for vacancy in name_tag:
-        name_vacancy = vacancy.text
-        # print(f'name_vacancy: <{name_vacancy}>')
-        # words_list = name_vacancy.split()
-
         link_vacancy = vacancy.get('href')
-        # print(f'link_vacancy: <{link_vacancy}>')
         vacancy_data = parse_link_vacancy(link_vacancy)
 
         if vacancy_data is not None:
             list_of_suitable_vacancies.append(vacancy_data)
 
-    # return list_of_suitable_vacancies
-    print(list_of_suitable_vacancies)
+    pprint(list_of_suitable_vacancies)
+    return list_of_suitable_vacancies
 
 
 def parse_link_vacancy(link):
@@ -69,31 +64,22 @@ def parse_link_vacancy(link):
     """
 
     headers_gen = fake_headers.Headers(browser='firefox', os='win')
-
     html_page = requests.get(url=link, headers=headers_gen.generate())
-    # print(html_page.status_code)
-
     soup = BeautifulSoup(html_page.text, features='html.parser')
-    # print(soup)
-
     name_vacancy = soup.find(name='h1', class_='bloko-header-section-1').text
-    # print(name_vacancy)
-
     vacancy_description = soup.find(name='div', class_='g-user-content')
-    # print(f'vacancy_description: <{vacancy_description.text}>')
     words_list_vacancy_description = vacancy_description.text.split()
-
-    salary = 'salary'
-
-    name_company = 'name_company'
-
-    city = soup.find(name='div', class_='vacancy-company-redesigned').get('a')
 
     list_search = ['Django', 'Flask']
 
     for keywords in list_search:
         if keywords in words_list_vacancy_description:
             print(f'Вакансия <{name_vacancy}> содержит ключевое слово {keywords}')
+
+            salary = soup.find(name='div', class_='vacancy-title').contents[2].text.replace('\xa0', ' ')
+            name_company = (soup.find(name='div', class_='vacancy-company-redesigned').text.split('\n')[0].
+                            replace('\xa0', ' '))
+            city = soup.find(name='div', class_='vacancy-company-redesigned').contents[5].text.split(', ')[0]
 
             vacancy_dict = {
                 'link': link,
@@ -102,15 +88,29 @@ def parse_link_vacancy(link):
                 'city': city
             }
 
-            pprint(vacancy_dict)
-
+            print(vacancy_dict, '\n')
             return vacancy_dict
 
 
 # 3. Записать в json информацию о каждой вакансии - ссылка, вилка зп, название компании, город.
+def extract_data_in_json(data):
+    """
+    Записывает данные в JSON
+    :param data: данные которые необходимо записать в json
+    :return: json
+    """
+    json_information = json.dumps(data)
+    return json_information
 
 
-###
-get_response()
-# job_search(html_data)
-
+while True:
+    try:
+        html_data = get_response()
+        list_of_suitable_vacancies = job_search(html_data)
+        json_info = extract_data_in_json(list_of_suitable_vacancies)
+        print(json_info)
+        break
+    except AttributeError as error:
+        print(f'Возникла ошибка <{error}>.\nВероятно страница не прогрузилась до конца. Подождите...')
+        time.sleep(3)
+        print('Повторная попытка сбора данных')
